@@ -277,10 +277,10 @@ void interface(int sd)
 				exit(1);
 			}
 		}
-		// else
-		// {
-		// 	exit(1);
-		// }
+		else
+		{
+			exit(1);
+		}
 	}
 }
 int main()
