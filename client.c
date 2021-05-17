@@ -267,13 +267,16 @@ void interface(int sd)
 			}
 			else if(op==5)
 			{
-				
+				mode=EXIT;
+				char mode_str[buf_size];
+				sprintf(mode_str,"%d",mode);
+				write(sd,mode_str,sizeof(mode_str));
 			}
-		// 	else
-		// 	{
-		// 		exit(1);
-		// 	}
-		// }
+			else
+			{
+				exit(1);
+			}
+		}
 		// else
 		// {
 		// 	exit(1);
