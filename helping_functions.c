@@ -195,7 +195,8 @@ int withdraw(char* username, int amt)
     }
     // critical section start
     lseek(fd,sizeof(struct User),SEEK_SET);
-    if(read(fd,&acct,sizeof(struct Account)) == -1) {
+    if(read(fd,&acct,sizeof(struct Account)) == -1) 
+    {
         perror("read"); 
         return -1;
     }
@@ -203,7 +204,8 @@ int withdraw(char* username, int amt)
     acct.balance = acct.balance-amt;
     if(acct.balance < 0) return -1;
     lseek(fd,sizeof(struct User),SEEK_SET);
-    if(write(fd,&acct,sizeof(struct Account))==-1) {
+    if(write(fd,&acct,sizeof(struct Account))==-1) 
+    {
         perror("write"); 
         return -1;
     }
@@ -305,4 +307,66 @@ char* view_details(char* username)
     sprintf(str,"username - %s \npassword - %s \nuser_type - %s\nAccount Balance : Rs %d\n",usr.username,usr.password,usr_string,acct.balance);
     close(fd);
     return str;
+}
+int del_account(char* username)
+{
+    char filename[buf_size];
+    strcpy(filename,username);
+    char extension[5] = ".txt";
+    strncat(filename,extension,sizeof(extension));
+    int fd = open(filename,O_RDWR,0644);
+    if(fd == -1)
+    { 
+        perror("open");
+    }
+    static struct flock lock;
+    lock.l_type = F_WRLCK;
+    lock.l_start = 0;
+    lock.l_whence = SEEK_SET;
+    lock.l_len = 0;
+    lock.l_pid = getpid();
+    if(fcntl(fd, F_SETLKW, &lock)==-1)
+    {
+        perror("fcntl");
+    }
+    return unlink(filename);
+}
+int user_modify(char* username,char* new_username,char* new_password) 
+{
+    static struct flock lock;
+    lock.l_type = F_WRLCK;
+    lock.l_start = 0;
+    lock.l_whence = SEEK_SET;
+    lock.l_len = 0;
+    lock.l_pid = getpid();
+    char filename[buf_size];
+    strcpy(filename,username);
+    char extension[5] = ".txt";
+    int fd,option;
+    strncat(filename,extension,sizeof(extension));
+    fd = open(filename,O_RDWR,0744);
+    if(fd == -1)
+    {
+        perror("modify user"); 
+        return -1;
+    }
+    if(fcntl(fd, F_SETLKW, &lock)==-1) 
+    {
+        perror("fcntl");
+    }
+    // critical section started
+    lseek(fd,0,SEEK_SET);
+    struct User usr;
+    if(read(fd,&usr,sizeof(struct User))==-1) 
+    { 
+        perror("read"); 
+        return -1; 
+    }
+    del_account(username);
+    signup(usr.type,new_username,new_password);
+    // critical section ended
+    lock.l_type = F_UNLCK;
+    fcntl(fd,F_SETLKW,&lock);
+    close(fd);
+    return 0;
 }

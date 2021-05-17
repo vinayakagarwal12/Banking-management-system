@@ -14,7 +14,9 @@ extern int deposit(char*,int);
 extern int password_change(char*,char*); 
 extern int withdraw(char*,int); 
 extern int get_balance(char*);
+extern int del_account(char*);
 extern char* view_details(char*);
+extern char* user_modify(char*,char*,char*);
 void* socket_cn(void* vgp)
 {
     // int nsd = *(int*)vgp;
@@ -158,7 +160,7 @@ void* socket_cn(void* vgp)
             read(sd,type,sizeof(type));
             read(sd,username1,sizeof(username1));
             read(sd,password1,sizeof(password1));
-            int flag=add_account(type,username1,password1);
+            int flag=signup(type,username1,password1);
             if(flag==-1)
             {
                 strncpy(reply,"Unable to add account",buf_size);
@@ -184,7 +186,21 @@ void* socket_cn(void* vgp)
         }
         else if(mode==MOD_ACC)
         {
-            // to be done
+            char* username[buf_size];
+			char* password[buf_size];
+            char* new_username[buf_size];
+			read(sd,username,sizeof(username));
+			read(sd,new_username,sizeof(new_username));
+			read(sd,password,sizeof(password));
+            int flag=user_modify(username, new_username,password);
+			if (flag == -1) 
+            {
+                strncpy(reply,"Unable to modify account",buf_size);
+            }
+            else
+            {
+                strncpy(reply,"modified user details successfuly",buf_size);
+            }
         }
         else if(mode==VIEW_DETAILS_ADMIN)
         {
