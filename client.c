@@ -192,7 +192,7 @@ void interface(int sd)
 		}
 		else if(user_type==3)
 		{
-			printf("Press 1 to get Account Details\n");
+			printf("Press 1 to get User Account Details\n");
 			printf("Press 2 to Add User\n");
 			printf("Press 3 to Delete User\n");
 			printf("Press 4 to Modify User details\n");
@@ -218,29 +218,57 @@ void interface(int sd)
 				printf("Press 1 to add Normal user\n");
 				printf("Press 2 to add Joint user\n");
 				scanf("%d",&type);
-				printf("Enter username\n");
-				scanf("%s",username);
-				printf("Enter password\n");
-				scanf("%s",password);
-				char type_string[buf_size];
-				sprintf(type_string,"%d",type);
-				write(sd,mode_str,sizeof(mode_str)); 
-				write(sd,type_string,sizeof(type_string));
-				write(sd,username,sizeof(username));
-				write(sd,password,sizeof(password));
+				if(type==1 || type==2)
+				{
+					printf("Enter username\n");
+					scanf("%s",username);
+					printf("Enter password\n");
+					scanf("%s",password);
+					char type_string[buf_size];
+					sprintf(type_string,"%d",type);
+					write(sd,mode_str,sizeof(mode_str)); 
+					write(sd,type_string,sizeof(type_string));
+					write(sd,username,sizeof(username));
+					write(sd,password,sizeof(password));	
+				}
+				else
+				{
+					exit(1);
+				}
 			}
 			else if(op==3)
 			{
+				mode=DEL_ACC;	
+				char mode_str[buf_size];
+				sprintf(mode_str,"%d",mode);
+				printf("Enter username\n");
+				scanf("%s",username);
+				write(sd,mode_str,sizeof(mode_str)); 
+				write(sd,username,sizeof(username));
+			}
+			else if(op==4)
+			{
+				mode=MOD_ACC;	
+				char mode_str[buf_size];
+				sprintf(mode_str,"%d",mode);
+				printf("Enter old username\n");
+				scanf("%s",username); 
+				printf("Enter new username\n");
+				char newusername[buf_size];
+				scanf("%s",newusername);
+				printf("Enter new password\n");
+				scanf("%s",password);
+				printf("Enter username\n");
+				scanf("%s",username);
+				write(sd,mode_str,sizeof(mode_str));
+				write(sd,username ,sizeof(username));
+				write(sd,newusername,sizeof(newusername)); 
+				write(sd,password ,sizeof(password)); 
+			}
+			else if(op==5)
+			{
 				
 			}
-		// 	else if(op==4)
-		// 	{
-				
-		// 	}
-		// 	else if(op==5)
-		// 	{
-				
-		// 	}
 		// 	else
 		// 	{
 		// 		exit(1);
