@@ -3,7 +3,7 @@
 #define SIGN_UP_ADMIN 3
 #define SIGN_IN_NORMAL 4
 #define SIGN_IN_JOINT 5
-#define SIGN_In_ADMIN 6
+#define SIGN_IN_ADMIN 6
 #define DEPOSIT 7
 #define WITHDRAW 8
 #define BALANCE_EQ 9
@@ -14,5 +14,16 @@
 #define MOD_ACC 14
 #define SEARCH_ACC 15
 #define VIEW_DETAILS_ADMIN 16
-#define EXIT 12
+#define EXIT 17
 #define buf_size 1000
+#define SIGN_UP 18
+#define SIGN_IN 19
+struct User {
+    char username[50];
+    char password[50];
+    int type;
+} User;
+struct Account
+{
+    int balance;
+} Account;

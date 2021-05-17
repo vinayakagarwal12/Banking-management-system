@@ -1,78 +1,37 @@
 #include<stdio.h>
-#include<fcntl.h>
-#include<unistd.h>
-#include<sys/types.h>
-#include<sys/socket.h>
-#include<netinet/in.h>
-#include<stdlib.h>
-#include<sys/stat.h>
+#include<unistd.h> 
+#include<sys/socket.h> 
+#include<stdlib.h> 
+#include<netinet/in.h> 
+#include <arpa/inet.h>
+#include<string.h> 
 #include<pthread.h>
-#include<init.h>
+#include<fcntl.h>
+#include"init.h"
+extern int signup(int,char*,char*); 
+extern int signin(int,char*,char*); 
+extern int deposit(char*,int); 
+extern int password_change(char*,char*); 
+extern int withdraw(char*,int); 
+extern int get_balance(char*);
+extern char* view_details(char*);
 void* socket_cn(void* vgp)
 {
-    int nsd = *(int*)vgp;
-    char buff[100];
-    read(nsd,buff,sizeof(buff));
-    printf("Client message : %s\n",buff);
-    write(nsd,"ACK for receving message by server\n",sizeof("ACK for receving message by server\n")); 
-    return 0;
-}
-int main()
-{
-    struct sockaddr_in serv, cli;
-    // AF_UNIX for local connection 
-    int sd = socket(AF_UNIX,SOCK_STREAM,0); 
-    if(sd==-1)
-    {
-        perror("Socket Failed");
-        exit(EXIT_FAILURE);
-    }
-    int tr=1;
-    setsockopt(sd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &tr, sizeof(tr));
-    serv.sin_family = AF_UNIX;
-    serv.sin_addr.s_addr = INADDR_ANY;
-    //big endian (host to socket) 
-    serv.sin_port = htons(15000); 
-    int bd=bind(sd,(struct sockaddr *)&serv,sizeof(serv));
-    if(bd==-1)
-    {
-        perror("bind failed");
-        exit(EXIT_FAILURE);
-    }
-    // number of clients at a time;
-    if(listen(sd,5)<0)
-    {
-        perror("listen");
-        exit(EXIT_FAILURE);
-    }   
-    int sz = sizeof(cli);
-    while(1)
-    {
-        int nsd=accept(sd,(struct sockaddr *)&cli,&sz);
-        if(nsd==-1)
-        {
-            perror("accept");
-            exit(EXIT_FAILURE);
-        }
-        pthread_t thid;
-        if(pthread_create(&thid,NULL,handler,(void*)&nsd) == -1)
-        {
-            perror("thread Failed");
-            exit(EXIT_FAILURE);
-        } 
-    }
-}
-void *handler(void *sockdesc)
-{
-    int sd=*(int*)sockdesc;
-    char *mode_str=malloc(buf_size*sizeof(char));
-    char *username=malloc(buf_size*sizeof(char));
-    char *password=malloc(buf_size*sizeof(char));
-    char *reply=malloc(buf_size*sizeof(char));
-    char *amount_dp=malloc(buf_size*sizeof(char));
-    char *amount_wh=malloc(buf_size*sizeof(char));
+    // int nsd = *(int*)vgp;
+    // char buff[buf_size];
+    // read(nsd,buff,sizeof(buff));
+    // printf("Client message : %s\n",buff);
+    // write(nsd,"ACK for receving message by server\n",sizeof("ACK for receving message by server\n")); 
+    int sd = *(int*)vgp;
+    char username[buf_size];
+    char password[buf_size];
+    char reply[buf_size];
+    char mode_str[buf_size];
+    char amount_dp[buf_size];
+    char amount_wh[buf_size];
+    int flag=1;
     int mode;
-    while (1)
+    while(1)
     {
         read(sd,mode_str,sizeof(mode_str));
         mode=atoi(mode_str);
@@ -80,28 +39,56 @@ void *handler(void *sockdesc)
         {
             read(sd,username,sizeof(username));
             read(sd,password,sizeof(password));
-            int flag=signup(mode,username,password);
-            if(flag==-1)
+            int type;
+            if(mode==SIGN_UP_NORMAL)
             {
-                reply="Sign up failed!";
+                type=1;
+            }
+            else if(mode==SIGN_UP_JOINT)
+            {
+                type=2;
             }
             else
             {
-                reply="You have signed up successfully";
+                type=3;
+            }
+            int flag=signup(type,username,password);
+            if(flag==-1)
+            {
+                strncpy(reply,"Sign up failed",buf_size);
+                break;
+            }
+            else
+            {
+                strncpy(reply,"You have signed up successfully",buf_size);
             }
         }
-        else if(mode==SIGN_IN_NORMAL || SIGN_IN_JOINT || SIGN_In_ADMIN)
+        else if(mode==SIGN_IN_NORMAL || mode==SIGN_IN_JOINT || mode==SIGN_IN_ADMIN)
         {
             read(sd,username,sizeof(mode_str));
             read(sd,password,sizeof(mode_str));
-            int flag=signin(mode,username,password);
-            if(flag==-1)
+            int type;
+            if(mode==SIGN_IN_NORMAL)
             {
-                reply="Sign up failed!";
+                type=1;
+            }
+            else if(mode==SIGN_IN_JOINT)
+            {
+                type=2;
             }
             else
             {
-                reply="You have signed up successfully";
+                type=3;
+            }
+            int flag=signin(mode,username,password);
+            if(flag==-1)
+            {
+                strncpy(reply,"Sign in failed",buf_size);
+                break;
+            }
+            else
+            {
+                strncpy(reply,"You have signed in successfully",buf_size);
             }
         }
         else if(mode==DEPOSIT)
@@ -110,11 +97,26 @@ void *handler(void *sockdesc)
             int flag=deposit(username,atoi(amount_dp));
             if(flag==-1)
             {
-                reply="Failure in Deposit";
+                strncpy(reply,"Failure in Deposit",buf_size);
             }
             else
             {
-                reply="Amount deposited successfully";
+                strncpy(reply,"Amount deposited successfully",buf_size);
+            }
+        }
+        else if(mode == BALANCE_EQ)
+        {
+            int amt=get_balance(username);
+            if(amt==-1)
+            {
+                strncpy(reply,"Failure in checking balance",buf_size);
+            }
+            else
+            {
+                char amt_str[buf_size];
+                sprintf(amt_str,"%d",amt);
+                strncpy(reply,"Your account balance is :- ",buf_size);
+                strncat(reply,amt_str,sizeof(amt_str));
             }
         }
         else if(mode==WITHDRAW)
@@ -123,30 +125,30 @@ void *handler(void *sockdesc)
             int flag=withdraw(username,atoi(amount_wh));
             if(flag==-1)
             {
-                reply="Failure in Withdraw";
+                strncpy(reply,"Failure in Withdraw",buf_size);
             }
             else
             {
-                reply="Amount withdraw successful";
+                strncpy(reply,"Amount withdraw successful",buf_size);
             }
         }
         else if(mode==PASSWORD_CHNG)
         {
-            char *new_password=malloc(buf_size*sizeof(char));
+            char new_password[buf_size];
             read(sd,new_password,sizeof(new_password));
             int flag=password_change(username,new_password);
             if(flag==-1)
             {
-                reply="Failure in password change";
+                strncpy(reply,"Failure in password change",buf_size);
             }
             else
             {
-                reply="Password changed successfuly";
+                strncpy(reply,"Password changed successfuly",buf_size);
             }
         }
         else if(mode==VIEW_DETAILS)
         {
-            reply=view_details(username);
+            strncpy(reply,view_details(username),buf_size);
         }
         else if(mode==ADD_ACC)
         {
@@ -159,11 +161,11 @@ void *handler(void *sockdesc)
             int flag=add_account(type,username1,password1);
             if(flag==-1)
             {
-                reply="Unable to add account";
+                strncpy(reply,"Unable to add account",buf_size);
             }
             else
             {
-                reply="Account added successfully";
+                strncpy(reply,"Account added successfully",buf_size);
             }
         }
         else if(mode==DEL_ACC)
@@ -173,11 +175,11 @@ void *handler(void *sockdesc)
             int flag=del_account(username1);
             if(flag==-1)
             {
-                reply="Unable to delete account";
+                strncpy(reply,"Unable to delete account",buf_size);
             }
             else
             {
-                reply="Account deleted successfully";
+                strncpy(reply,"Account deleted successfully",buf_size);
             }
         }
         else if(mode==MOD_ACC)
@@ -188,8 +190,57 @@ void *handler(void *sockdesc)
         {
             char *username1=malloc(buf_size*sizeof(char));
             read(sd,username1,sizeof(username1));
-            reply=view_details(username1);
+            strncpy(reply,view_details(username1),buf_size);
         }
-        write(sd,reply,sizeof(reply));
+        write(sd,reply,buf_size*sizeof(char));
     }
+    printf("%d\n",flag);
+    return 0;
+}
+int main()
+{
+    int server_fd,new_socket_sd,opt=1;
+    struct sockaddr_in server, client;
+    int addrlen=sizeof(server);
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    { 
+		perror("Creating Socket failed..."); 
+		exit(EXIT_FAILURE); 
+	} 
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) 
+    {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = INADDR_ANY;
+    server.sin_port = htons(8000);
+
+    if (bind(server_fd, (struct sockaddr *)&server, sizeof(server))<0) { 
+		perror("Binding Socket failed..."); 
+		exit(EXIT_FAILURE); 
+	} 
+	if (listen(server_fd, 3) < 0) { 
+		perror("Listening error..."); 
+		exit(EXIT_FAILURE); 
+	} 
+    printf("Bank is opened Successfully!\n");
+    while(1)
+    {
+        if ((new_socket_sd = accept(server_fd, (struct sockaddr *)&server,(socklen_t *)&addrlen))<0) { 
+            perror("Accepting Connection failed\n"); 
+            exit(EXIT_FAILURE); 
+        } 
+        pthread_t thread_id;
+        if(pthread_create(&thread_id,NULL,socket_cn,(void*)&new_socket_sd)<0)
+        {
+            perror("Could not create thread to handle client\n");
+            return 1;
+        }
+        printf("Handler assigned\n");
+    }
+    printf("server shutdown\n");
+    close(server_fd);
+    close(new_socket_sd);
+	return 0;
 }
