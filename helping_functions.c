@@ -58,17 +58,19 @@ int signin(int mode, char* username, char* password)
     int fd = open(filename,O_RDONLY,0644);
     if(fd == -1)
     {
-        perror("Sign in"); return -1;
+        perror("Sign in"); 
+        return -1;
     }
     struct User usr;
-    if(fcntl(fd, F_SETLKW, &lock)==-1) {
+    if(fcntl(fd, F_SETLKW, &lock)==-1) 
+    {
         perror("fcntl") ; 
         return -1;
     }
     // critical section start
     lseek(fd,0,SEEK_SET);
     read(fd,&usr,sizeof(struct User));
-    if((strcmp(usr.password,password)!=0) || (mode==SIGN_IN_NORMAL && (usr.type!=1)) || (mode==SIGN_IN_ADMIN && (usr.type!=2))|| (mode==SIGN_IN_JOINT && (usr.type!=2))) 
+    if((strcmp(usr.password,password)!=0) || (mode!=usr.type)) 
     {
         return -1;
     }
@@ -200,7 +202,7 @@ int withdraw(char* username, int amt)
         perror("read"); 
         return -1;
     }
-    printf("balance = %d\n",acct.balance);
+    // printf("balance = %d\n",acct.balance);
     acct.balance = acct.balance-amt;
     if(acct.balance < 0) return -1;
     lseek(fd,sizeof(struct User),SEEK_SET);
@@ -291,20 +293,20 @@ char* view_details(char* username)
     lock.l_type = F_UNLCK;
     fcntl(fd,F_SETLKW,&lock);
     char* str = (char*)malloc(buf_size * sizeof(char));
-    char usr_string[buf_size];
+    char usr_str[buf_size];
     if(usr.type==1)
     {
-        strncpy(usr_string,"Normal User",buf_size);
+        strncpy(usr_str,"Normal User",buf_size);
     }
     else if(usr.type==2)
     {
-        strncpy(usr_string,"Joint User",buf_size);
+        strncpy(usr_str,"Joint User",buf_size);
     }
     else if(usr.type==3)
     {
-        strncpy(usr_string,"Admin",buf_size);
+        strncpy(usr_str,"Admin",buf_size);
     }
-    sprintf(str,"username - %s \npassword - %s \nuser_type - %s\nAccount Balance : Rs %d\n",usr.username,usr.password,usr_string,acct.balance);
+    sprintf(str,"Username - %s \nPassword - %s \nUser_type - %s\nAccount Balance : Rs %d\n",usr.username,usr.password,usr_str,acct.balance);
     close(fd);
     return str;
 }

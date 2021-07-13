@@ -18,10 +18,12 @@
 #define buf_size 1000
 #define SIGN_UP 18
 #define SIGN_IN 19
-struct User {
+struct User 
+{
     char username[50];
     char password[50];
     int type;
+    int active;
 } User;
 struct Account
 {

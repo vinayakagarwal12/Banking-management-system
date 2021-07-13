@@ -57,18 +57,26 @@ void interface(int sd)
             // printf("Data sent\n");
             int a=read(sd,reply,buf_size*sizeof(char)); 
             // printf("%d",a);
-            printf("%s\n",reply); 
-	        if(!strcmp(reply,"Sign up failed\n")) 
+            // printf("%s\n",reply); 
+	        if(strcmp(reply,"Sign up failed\n")==0) 
             {
-				exit(1);
+				mode=EXIT;
+				char mode_str[buf_size];
+				sprintf(mode_str,"%d",mode);
+				write(sd,mode_str,sizeof(mode_str));
+				exit(0);
             }
         }
         else
         {
-            exit(1);
+            mode=EXIT;
+			char mode_str[buf_size];
+			sprintf(mode_str,"%d",mode);
+			write(sd,mode_str,sizeof(mode_str));
+			exit(0);
         }
     }
-    else
+    else if(op == 2)
     {
         // sign in
 		printf("Please enter the user type for sign in\n");
@@ -102,16 +110,33 @@ void interface(int sd)
 			int a=read(sd,reply,buf_size*sizeof(char)); 
 			// printf("%d",a);
 			printf("%s\n",reply); 
-			if(!strcmp(reply,"Sign in failed\n")) 
+			// printf("%d\n",strcmp(reply,"Sign in failed"));
+			if(strcmp(reply,"Sign in failed")==0) 
 			{
-				exit(1);
+				mode=EXIT;
+				char mode_str[buf_size];
+				sprintf(mode_str,"%d",mode);
+				write(sd,mode_str,sizeof(mode_str));
+				exit(0);
 			}
 		}
 		else
 		{
-			exit(1);
+			mode=EXIT;
+			char mode_str[buf_size];
+			sprintf(mode_str,"%d",mode);
+			write(sd,mode_str,sizeof(mode_str));
+			exit(0);
 		}
     }
+	else
+	{
+		mode=EXIT;
+		char mode_str[buf_size];
+		sprintf(mode_str,"%d",mode);
+		write(sd,mode_str,sizeof(mode_str));
+		exit(0);
+	}
 	while (1)
 	{
 		if(user_type == 1 || user_type==2)
@@ -121,7 +146,7 @@ void interface(int sd)
 			printf("Press 2 to Deposit\n");
 			printf("Press 3 to Withdraw\n");
 			printf("Press 4 to change Password\n");
-			printf("Press 5 to  view Details\n");
+			printf("Press 5 to view Details\n");
 			printf("Press 6 to Exit\n");
 			scanf("%d",&op);
 			if(op== 1)
@@ -180,17 +205,19 @@ void interface(int sd)
 				mode=EXIT;
 				char mode_str[buf_size];
 				sprintf(mode_str,"%d",mode);
-				write(sd,mode_str,sizeof(mode_str)); 
+				write(sd,mode_str,sizeof(mode_str));
 				exit(0);
 			}
 			else
 			{
-				break;
+				mode=EXIT;
+				char mode_str[buf_size];
+				sprintf(mode_str,"%d",mode);
+				write(sd,mode_str,sizeof(mode_str));
+				exit(0);
 			}
-			int a=read(sd,reply,buf_size*sizeof(char)); 
-			printf("%s\n",reply); 
 		}
-		else if(user_type==3)
+		else if(user_type == 3)
 		{
 			printf("Press 1 to get User Account Details\n");
 			printf("Press 2 to Add User\n");
@@ -203,7 +230,7 @@ void interface(int sd)
 				mode=VIEW_DETAILS_ADMIN;
 				char mode_str[buf_size];
 				sprintf(mode_str,"%d",mode);
-				printf("Enter username : ");
+				printf("Enter username\n");
 				scanf("%s",username);
 				write(sd,mode_str,sizeof(mode_str)); 
 				write(sd,username,sizeof(username)); 
@@ -233,7 +260,11 @@ void interface(int sd)
 				}
 				else
 				{
-					exit(1);
+					mode=EXIT;
+					char mode_str[buf_size];
+					sprintf(mode_str,"%d",mode);
+					write(sd,mode_str,sizeof(mode_str));
+					exit(0);
 				}
 			}
 			else if(op==3)
@@ -271,48 +302,51 @@ void interface(int sd)
 				char mode_str[buf_size];
 				sprintf(mode_str,"%d",mode);
 				write(sd,mode_str,sizeof(mode_str));
+				exit(0);
 			}
 			else
 			{
-				exit(1);
+				mode=EXIT;
+				char mode_str[buf_size];
+				sprintf(mode_str,"%d",mode);
+				write(sd,mode_str,sizeof(mode_str));
+				exit(0);
 			}
 		}
 		else
 		{
-			exit(1);
+			mode=EXIT;
+			char mode_str[buf_size];
+			sprintf(mode_str,"%d",mode);
+			write(sd,mode_str,sizeof(mode_str));
+			exit(0);
 		}
+		int a=read(sd,reply,buf_size*sizeof(char)); 
+		printf("%s\n",reply); 
 	}
 }
 int main()
 {
-    int client_socket_sd;
+    int csd;
     struct sockaddr_in server;
     int addrlen=sizeof(server);
-    
-
-    if ((client_socket_sd = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+    if ((csd = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
 	{ 
-		printf("Creating Socket failed...\n"); 
+		printf("Creating Socket failed\n"); 
 		return -1; 
 	} 
-
 	server.sin_family = AF_INET; 
-	server.sin_port = htons(8000); 
-    // server.sin_addr.s_addr = inet_addr("127.0.0.1");
+	server.sin_port = htons(7000); 
 	if(inet_pton(AF_INET, "127.0.0.1", &server.sin_addr)<=0) 
 	{ 
-		printf("Invalid address/ Address not supported \n"); 
+		printf("Invalid address\n"); 
 		return -1; 
 	} 
-
-	if (connect(client_socket_sd, (struct sockaddr *)&server, sizeof(server)) < 0) 
+	if(connect(csd,(struct sockaddr *)&server, sizeof(server))<0) 
 	{ 
 		printf("Connection to Server Failed \n"); 
 		return -1; 
 	} 
-	interface(client_socket_sd);
-
-
+	interface(csd);
 	return 0;
-    // printf("%d\n",sd);
 }

@@ -8,6 +8,7 @@
 #include<pthread.h>
 #include<fcntl.h>
 #include"init.h"
+
 extern int signup(int,char*,char*); 
 extern int signin(int,char*,char*); 
 extern int deposit(char*,int); 
@@ -16,7 +17,8 @@ extern int withdraw(char*,int);
 extern int get_balance(char*);
 extern int del_account(char*);
 extern char* view_details(char*);
-extern char* user_modify(char*,char*,char*);
+extern int user_modify(char*,char*,char*);
+
 void* socket_cn(void* vgp)
 {
     // int nsd = *(int*)vgp;
@@ -58,7 +60,6 @@ void* socket_cn(void* vgp)
             if(flag==-1)
             {
                 strncpy(reply,"Sign up failed",buf_size);
-                break;
             }
             else
             {
@@ -82,11 +83,10 @@ void* socket_cn(void* vgp)
             {
                 type=3;
             }
-            int flag=signin(mode,username,password);
+            int flag=signin(type,username,password);
             if(flag==-1)
             {
                 strncpy(reply,"Sign in failed",buf_size);
-                break;
             }
             else
             {
@@ -154,12 +154,13 @@ void* socket_cn(void* vgp)
         }
         else if(mode==ADD_ACC)
         {
-            char *username1=malloc(buf_size*sizeof(char));
-            char *password1=malloc(buf_size*sizeof(char));
-            char *type=malloc(buf_size*sizeof(char));
-            read(sd,type,sizeof(type));
+            char type_str[buf_size];
+            char username1[buf_size];
+            char password1[buf_size];
+            read(sd,type_str,sizeof(type_str));
             read(sd,username1,sizeof(username1));
             read(sd,password1,sizeof(password1));
+            int type=atoi(type_str);
             int flag=signup(type,username1,password1);
             if(flag==-1)
             {
@@ -186,9 +187,9 @@ void* socket_cn(void* vgp)
         }
         else if(mode==MOD_ACC)
         {
-            char* username[buf_size];
-			char* password[buf_size];
-            char* new_username[buf_size];
+            char username[buf_size];
+			char password[buf_size];
+            char new_username[buf_size];
 			read(sd,username,sizeof(username));
 			read(sd,new_username,sizeof(new_username));
 			read(sd,password,sizeof(password));
@@ -204,59 +205,65 @@ void* socket_cn(void* vgp)
         }
         else if(mode==VIEW_DETAILS_ADMIN)
         {
-            char *username1=malloc(buf_size*sizeof(char));
-            read(sd,username1,sizeof(username1));
-            strncpy(reply,view_details(username1),buf_size);
+            char username_get[buf_size];
+            read(sd,username_get,sizeof(username_get));
+            strncpy(reply,view_details(username_get),buf_size);
+            // printf("%s\n",reply);
+        }
+        else if(mode == EXIT)
+        {
+            break;
         }
         write(sd,reply,buf_size*sizeof(char));
     }
-    printf("%d\n",flag);
     return 0;
 }
 int main()
 {
-    int server_fd,new_socket_sd,opt=1;
+    int sfd,nsd,opt=1;
     struct sockaddr_in server, client;
     int addrlen=sizeof(server);
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    if ((sfd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     { 
-		perror("Creating Socket failed..."); 
+		perror("Creating Socket failed"); 
 		exit(EXIT_FAILURE); 
 	} 
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) 
+    if (setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) 
     {
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = INADDR_ANY;
-    server.sin_port = htons(8000);
-
-    if (bind(server_fd, (struct sockaddr *)&server, sizeof(server))<0) { 
-		perror("Binding Socket failed..."); 
+    server.sin_port = htons(7000);
+    if (bind(sfd,(struct sockaddr *)&server,sizeof(server))<0) 
+    { 
+		perror("Binding Socket failed"); 
 		exit(EXIT_FAILURE); 
 	} 
-	if (listen(server_fd, 3) < 0) { 
-		perror("Listening error..."); 
+	if (listen(sfd,5)<0) 
+    { 
+		perror("Listening error"); 
 		exit(EXIT_FAILURE); 
 	} 
     printf("Bank is opened Successfully!\n");
     while(1)
     {
-        if ((new_socket_sd = accept(server_fd, (struct sockaddr *)&server,(socklen_t *)&addrlen))<0) { 
-            perror("Accepting Connection failed\n"); 
+        if((nsd = accept(sfd, (struct sockaddr *)&server,(socklen_t *)&addrlen))<0) 
+        { 
+            perror("failure in Accepting connection\n"); 
             exit(EXIT_FAILURE); 
         } 
         pthread_t thread_id;
-        if(pthread_create(&thread_id,NULL,socket_cn,(void*)&new_socket_sd)<0)
+        if(pthread_create(&thread_id,NULL,socket_cn,(void*)&nsd)<0)
         {
-            perror("Could not create thread to handle client\n");
+            perror("Error in creating thread to handle client\n");
             return 1;
         }
-        printf("Handler assigned\n");
+        printf("Handler assigned to client\n");
     }
-    printf("server shutdown\n");
-    close(server_fd);
-    close(new_socket_sd);
+    printf("Bank server shutdown\n");
+    close(sfd);
+    close(nsd);
 	return 0;
 }
